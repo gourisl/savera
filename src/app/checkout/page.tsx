@@ -4,11 +4,15 @@ import { useCart } from "@/context/CartContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useState } from "react";
-import { Lock, CreditCard, Banknote, HelpCircle } from "lucide-react";
+import { Lock, CreditCard, Banknote, HelpCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function CheckoutPage() {
-  const { items, cartTotal } = useCart();
+  const { items, cartTotal, clearCart } = useCart();
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
   const shippingFee = 50;
   const total = cartTotal + (items.length > 0 ? shippingFee : 0);
 
@@ -30,11 +34,61 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Since Razorpay is postponed, we will just simulate order placement
-    alert("Order placement simulated! Razorpay integration will handle this soon.");
+    if (items.length === 0) {
+      alert("Your cart is empty!");
+      return;
+    }
+    setSubmitting(true);
+
+    try {
+      // Create shipping address JSON
+      const shippingAddress = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: `${formData.houseName}, ${formData.street}, ${formData.area}, ${formData.landmark ? formData.landmark + ', ' : ''}${formData.city}, ${formData.state} - ${formData.pinCode}`
+      };
+
+      // 1. Insert order into Supabase
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          total_amount: total,
+          status: "pending",
+          shipping_address: shippingAddress,
+          payment_method: "Razorpay / Online"
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2. Insert order items
+      if (order) {
+        const orderItemsPayload = items.map((item) => ({
+          order_id: order.id,
+          product_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price
+        }));
+
+        await supabase.from("order_items").insert(orderItemsPayload);
+
+        // 3. Clear cart and redirect
+        clearCart();
+        alert(`Order #${order.id.slice(0, 8)} placed successfully!`);
+        router.push(`/track-order?id=${order.id}`);
+      }
+    } catch (err: any) {
+      console.error("Order error:", err);
+      alert("Failed to submit order: " + (err.message || "Unknown error"));
+    } finally {
+      setSubmitting(false);
+    }
   };
+
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
@@ -145,9 +199,17 @@ export default function CheckoutPage() {
 
               <button 
                 type="submit" 
-                className="w-full bg-[var(--color-text-main)] text-white py-5 rounded-lg font-medium text-lg tracking-wide hover:bg-[var(--color-primary-gold)] transition-colors shadow-lg"
+                disabled={submitting}
+                className="w-full bg-[var(--color-text-main)] text-white py-5 rounded-lg font-medium text-lg tracking-wide hover:bg-[var(--color-primary-gold)] transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Place Order (₹{total.toLocaleString()})
+                {submitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Processing Order...
+                  </>
+                ) : (
+                  `Place Order (₹${total.toLocaleString()})`
+                )}
               </button>
             </form>
           </div>
