@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Package } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Package, Tag } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const sidebarLinks = [
     { name: "Dashboard", href: "/admin", icon: <LayoutDashboard size={20} /> },
     { name: "Orders", href: "/admin/orders", icon: <ShoppingBag size={20} /> },
     { name: "Products", href: "/admin/products", icon: <Package size={20} /> },
+    { name: "Categories", href: "/admin/categories", icon: <Tag size={20} /> },
     { name: "Customers", href: "/admin/customers", icon: <Users size={20} /> },
     { name: "Settings", href: "/admin/settings", icon: <Settings size={20} /> },
   ];
