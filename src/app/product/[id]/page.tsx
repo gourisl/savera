@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Heart, Share2, Shield, Truck, RotateCcw } from "lucide-react";
 import Link from "next/link";
+import AddToCart from "@/components/product/AddToCart";
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   // Mock Data
@@ -74,26 +75,21 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               {product.description}
             </p>
 
-            <div className="mb-8">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-[var(--color-text-main)]">Quantity</span>
-                <span className="text-[var(--color-text-light)]">Only {product.stock} left in stock</span>
-              </div>
-              <div className="flex items-center border border-[var(--color-text-light)] w-32 rounded-sm">
-                <button className="flex-1 py-3 hover:bg-[var(--color-surface-light)] transition-colors">-</button>
-                <span className="flex-1 text-center">1</span>
-                <button className="flex-1 py-3 hover:bg-[var(--color-surface-light)] transition-colors">+</button>
-              </div>
-            </div>
+            <AddToCart 
+              product={{
+                id: product.id,
+                name: product.name,
+                price: parseInt(product.price.replace(/[^0-9]/g, '')), // Basic mock parsing, to be replaced by real DB price
+                image: product.images[0],
+                stock: product.stock
+              }} 
+            />
 
-            <div className="flex gap-4 mb-10">
-              <button className="flex-1 bg-[var(--color-text-main)] text-white py-4 font-medium tracking-wide hover:bg-[var(--color-primary-gold)] transition-colors shadow-md">
-                Add to Cart
-              </button>
-              <button className="w-14 shrink-0 flex items-center justify-center border border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-light)] transition-colors">
+            <div className="flex gap-4 mb-10 -mt-6">
+              <button className="w-14 shrink-0 flex items-center justify-center border border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-light)] transition-colors py-4">
                 <Heart size={20} />
               </button>
-              <button className="w-14 shrink-0 flex items-center justify-center border border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-light)] transition-colors">
+              <button className="w-14 shrink-0 flex items-center justify-center border border-[var(--color-text-main)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-light)] transition-colors py-4">
                 <Share2 size={20} />
               </button>
             </div>

@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, ShoppingBag, Heart, User, Menu, X } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { items, setIsCartOpen } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -74,11 +76,16 @@ export default function Navbar() {
           <Link href="/wishlist" className="hidden md:block text-[var(--color-text-main)] hover:text-[var(--color-primary-gold)] transition-colors">
             <Heart size={20} />
           </Link>
-          <button className="text-[var(--color-text-main)] hover:text-[var(--color-primary-gold)] transition-colors relative">
+          <button 
+            className="text-[var(--color-text-main)] hover:text-[var(--color-primary-gold)] transition-colors relative"
+            onClick={() => setIsCartOpen(true)}
+          >
             <ShoppingBag size={20} />
-            <span className="absolute -top-1 -right-2 bg-[var(--color-primary-peach)] text-[var(--color-text-main)] text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-              0
-            </span>
+            {items.length > 0 && (
+              <span className="absolute -top-1 -right-2 bg-[var(--color-primary-peach)] text-[var(--color-text-main)] text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {items.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
           </button>
         </div>
       </div>

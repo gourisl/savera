@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Lato } from "next/font/google";
+import { CartProvider } from "@/context/CartContext";
+import CartDrawer from "@/components/cart/CartDrawer";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -28,7 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="smooth-scroll">
       <body className={`${playfair.variable} ${lato.variable} antialiased`}>
-        {children}
+        <CartProvider>
+          {children}
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );
