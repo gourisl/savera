@@ -24,11 +24,17 @@ export default function AdminCategories() {
 
   async function fetchCategories() {
     setLoading(true);
-    const { data } = await supabase
+    let { data, error } = await supabase
       .from("categories")
       .select("*")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
+
+    if (error) {
+      const fallback = await supabase.from("categories").select("*").order("name", { ascending: true });
+      data = fallback.data;
+    }
+
     setCategories(data || []);
     setLoading(false);
   }
@@ -69,21 +75,37 @@ export default function AdminCategories() {
       }
     }
 
+    const basePayload = {
+      name,
+      slug,
+      image_url: finalImageUrl || null,
+      description: description || null,
+    };
+
     if (editTarget) {
-      const { error } = await supabase
+      let { error } = await supabase
         .from("categories")
-        .update({ name, slug, image_url: finalImageUrl || null, description: description || null })
+        .update({ ...basePayload, sort_order: editTarget.sort_order ?? 0, is_visible: editTarget.is_visible ?? true })
         .eq("id", editTarget.id);
+
+      if (error && (error.message.includes("is_visible") || error.message.includes("sort_order") || error.message.includes("column"))) {
+        const res = await supabase.from("categories").update(basePayload).eq("id", editTarget.id);
+        error = res.error;
+      }
+
       if (error) alert("Error: " + error.message);
     } else {
-      const { error } = await supabase.from("categories").insert({
-        name,
-        slug,
-        image_url: finalImageUrl || null,
-        description: description || null,
+      let { error } = await supabase.from("categories").insert({
+        ...basePayload,
         sort_order: categories.length,
         is_visible: true,
       });
+
+      if (error && (error.message.includes("is_visible") || error.message.includes("sort_order") || error.message.includes("column"))) {
+        const res = await supabase.from("categories").insert(basePayload);
+        error = res.error;
+      }
+
       if (error) alert("Error: " + error.message);
     }
 
@@ -103,11 +125,13 @@ export default function AdminCategories() {
   }
 
   async function handleToggleVisible(cat: any) {
-    await supabase.from("categories").update({ is_visible: !cat.is_visible }).eq("id", cat.id);
-    fetchCategories();
+    if (cat.is_visible === undefined) return;
+    const { error } = await supabase.from("categories").update({ is_visible: !cat.is_visible }).eq("id", cat.id);
+    if (!error) fetchCategories();
   }
 
   async function handleMove(cat: any, direction: "up" | "down") {
+    if (cat.sort_order === undefined) return;
     const idx = categories.findIndex((c) => c.id === cat.id);
     const swapIdx = direction === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= categories.length) return;
