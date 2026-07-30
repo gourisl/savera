@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Search, X, Loader2, Copy, Upload, Image as ImageIcon, Video, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { uploadImage } from "@/lib/storage";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([]);
@@ -144,7 +144,7 @@ export default function AdminProducts() {
       const uploadedUrls: string[] = [];
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
-        const url = await uploadToCloudinary(file);
+        const url = await uploadImage(file);
         uploadedUrls.push(url);
       }
 
@@ -153,7 +153,7 @@ export default function AdminProducts() {
         images: [...prev.images, ...uploadedUrls],
       }));
     } catch (err: any) {
-      alert("Cloudinary Upload Notice: Falling back to image URL field.");
+      alert("Upload failed. Falling back to image URL field.");
     } finally {
       setUploadingImage(false);
     }

@@ -148,7 +148,7 @@ export default function AdminCategories() {
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-gold)] text-sm"
-                  placeholder="https://res.cloudinary.com/..."
+                  placeholder="https://..."
                 />
               </div>
             </div>

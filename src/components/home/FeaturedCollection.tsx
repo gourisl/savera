@@ -29,7 +29,7 @@ const products = [
     price: "₹4,299",
     category: "Bracelets",
     image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=crop", 
-    // placeholder image reuse, we'll configure cloudinary later
+    // placeholder image reuse
   }
 ];
 
