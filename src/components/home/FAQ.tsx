@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
-const faqs = [
+const DEFAULT_FAQS = [
   {
     question: "Is your jewellery really anti-tarnish?",
     answer: "Yes! All our anti-tarnish collections are coated with a special rhodium or PVD layer that protects against oxidation, sweat, and moisture. With proper care, the shine lasts for years.",
@@ -31,7 +32,23 @@ const faqs = [
 ];
 
 export default function FAQ() {
+  const [faqs, setFaqs] = useState(DEFAULT_FAQS);
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  useEffect(() => {
+    async function loadFaqs() {
+      const { data } = await supabase
+        .from("faqs")
+        .select("question, answer")
+        .eq("is_visible", true)
+        .order("sort_order", { ascending: true });
+      
+      if (data && data.length > 0) {
+        setFaqs(data);
+      }
+    }
+    loadFaqs();
+  }, []);
 
   return (
     <section className="py-24 bg-[var(--color-surface-white)]">
@@ -49,7 +66,7 @@ export default function FAQ() {
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="border border-[var(--color-primary-blush)] rounded-xl overflow-hidden transition-all duration-300"
+              className="border border-[var(--color-primary-blush)] rounded-xl overflow-hidden transition-all duration-300 bg-white shadow-sm"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}

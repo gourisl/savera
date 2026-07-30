@@ -1,40 +1,72 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+"use client";
 
-const bestSellers = [
-  {
-    id: 1,
-    name: "Aurelia Chain Necklace",
-    price: "₹2,799",
-    originalPrice: "₹3,999",
-    badge: "Best Seller",
-    image: "https://images.unsplash.com/photo-1599643478514-4a4e065f4d1e?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    name: "Seraphina Drop Earrings",
-    price: "₹1,499",
-    badge: null,
-    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    name: "Luna Crescent Ring",
-    price: "₹2,199",
-    badge: "Trending",
-    image: "https://images.unsplash.com/photo-1605100804763-247f66150ce8?q=80&w=600&auto=format&fit=crop",
-  },
-  {
-    id: 4,
-    name: "Celeste Pearl Bracelet",
-    price: "₹3,299",
-    originalPrice: "₹4,499",
-    badge: "30% Off",
-    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=600&auto=format&fit=crop",
-  },
-];
+import Link from "next/link";
+import { ArrowRight, ShoppingBag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useCart } from "@/context/CartContext";
+
+const PLACEHOLDER = "https://images.unsplash.com/photo-1599643478514-4a4e065f4d1e?q=80&w=600&auto=format&fit=crop";
 
 export default function BestSellers() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+
+  useEffect(() => {
+    async function fetchBestSellers() {
+      const { data } = await supabase
+        .from("products")
+        .select("*, categories(name)")
+        .eq("is_bestseller", true)
+        .order("created_at", { ascending: false })
+        .limit(4);
+
+      // Fallback: just fetch 4 recent products if no bestsellers flagged
+      if (!data || data.length === 0) {
+        const { data: fallback } = await supabase
+          .from("products")
+          .select("*, categories(name)")
+          .order("created_at", { ascending: false })
+          .limit(4);
+        setProducts(fallback || []);
+      } else {
+        setProducts(data);
+      }
+      setLoading(false);
+    }
+    fetchBestSellers();
+  }, []);
+
+  const getImage = (product: any) =>
+    product.images && product.images.length > 0 ? product.images[0] : PLACEHOLDER;
+
+  if (loading) {
+    return (
+      <section className="py-24 bg-[var(--color-surface-white)]">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex justify-between mb-12">
+            <div>
+              <div className="h-3 w-20 bg-gray-200 rounded mb-3 animate-pulse" />
+              <div className="h-10 w-48 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[3/4] bg-gray-200 rounded-lg mb-4" />
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
+
   return (
     <section className="py-24 bg-[var(--color-surface-white)]">
       <div className="container mx-auto px-4 md:px-6">
@@ -48,44 +80,64 @@ export default function BestSellers() {
             </h2>
           </div>
           <Link
-            href="/collections/best-sellers"
+            href="/shop"
             className="hidden md:flex items-center gap-2 text-[var(--color-text-main)] hover:text-[var(--color-primary-gold)] transition-colors group mt-4 md:mt-0"
           >
             <span className="font-medium tracking-wide uppercase text-sm border-b border-transparent group-hover:border-[var(--color-primary-gold)] pb-1 transition-all">
-              Shop All Best Sellers
+              Shop All
             </span>
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {bestSellers.map((product) => (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          {products.map((product) => (
             <Link href={`/product/${product.id}`} key={product.id} className="group cursor-pointer">
-              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-sm bg-[var(--color-surface-light)]">
+              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-lg bg-[var(--color-surface-light)]">
+                {product.discount_percent > 0 && (
+                  <span className="absolute top-3 left-3 bg-[var(--color-primary-peach)] text-[var(--color-text-main)] text-[9px] font-bold px-2.5 py-1 uppercase tracking-wider z-10 rounded-sm shadow-sm">
+                    {product.discount_percent}% OFF
+                  </span>
+                )}
+                {product.is_bestseller && (
+                  <span className="absolute top-3 right-3 bg-amber-100 text-amber-800 text-[9px] font-bold px-2.5 py-1 uppercase tracking-wider z-10 rounded-sm">
+                    Best Seller
+                  </span>
+                )}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={product.image}
+                  src={getImage(product)}
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                {product.badge && (
-                  <span className="absolute top-4 left-4 bg-[var(--color-primary-peach)] text-[var(--color-text-main)] text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider">
-                    {product.badge}
-                  </span>
-                )}
                 <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <button className="absolute bottom-4 left-1/2 -translate-x-1/2 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 bg-white text-[var(--color-text-main)] px-6 py-3 text-sm font-medium tracking-wide transition-all duration-300 w-[80%] hover:bg-[var(--color-primary-gold)] hover:text-white shadow-lg">
-                  Quick Add
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToCart({
+                      id: product.id,
+                      name: product.name,
+                      price: Number(product.price),
+                      image: getImage(product),
+                      quantity: 1,
+                    });
+                  }}
+                  className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-[var(--color-text-main)] text-white py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[var(--color-primary-gold)] transition-colors"
+                >
+                  <ShoppingBag size={13} /> Add to Cart
                 </button>
               </div>
               <div>
-                <h3 className="text-lg font-serif text-[var(--color-text-main)] mb-1 group-hover:text-[var(--color-primary-gold)] transition-colors">
+                <span className="text-[10px] tracking-widest text-[var(--color-text-light)] uppercase mb-1 block">
+                  {product.categories?.name || "Jewellery"}
+                </span>
+                <h3 className="text-base md:text-lg font-serif text-[var(--color-text-main)] mb-1 group-hover:text-[var(--color-primary-gold)] transition-colors leading-snug">
                   {product.name}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <p className="text-[var(--color-text-main)] font-medium">{product.price}</p>
-                  {product.originalPrice && (
-                    <p className="text-[var(--color-text-light)] line-through text-sm">{product.originalPrice}</p>
+                  <p className="text-[var(--color-text-main)] font-semibold text-sm">₹{Number(product.price).toLocaleString()}</p>
+                  {product.original_price && (
+                    <p className="text-[var(--color-text-light)] line-through text-xs">₹{Number(product.original_price).toLocaleString()}</p>
                   )}
                 </div>
               </div>
