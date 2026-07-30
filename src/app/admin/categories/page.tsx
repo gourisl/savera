@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Tag, Loader2, Edit2, X, Check, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Tag, Loader2, Edit2, X, Check, ArrowUp, ArrowDown, Eye, EyeOff, Image as ImageIcon, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { uploadImage } from "@/lib/storage";
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -14,6 +15,7 @@ export default function AdminCategories() {
   const [editTarget, setEditTarget] = useState<any | null>(null);
   const [name, setName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function AdminCategories() {
     setEditTarget(null);
     setName("");
     setImageUrl("");
+    setImageFile(null);
     setDescription("");
     setShowForm(true);
   }
@@ -43,6 +46,7 @@ export default function AdminCategories() {
     setEditTarget(cat);
     setName(cat.name);
     setImageUrl(cat.image_url || "");
+    setImageFile(null);
     setDescription(cat.description || "");
     setShowForm(true);
   }
@@ -54,17 +58,28 @@ export default function AdminCategories() {
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
+    let finalImageUrl = imageUrl;
+    if (imageFile) {
+      try {
+        finalImageUrl = await uploadImage(imageFile, 'categories');
+      } catch (err) {
+        alert("Image upload failed");
+        setSaving(false);
+        return;
+      }
+    }
+
     if (editTarget) {
       const { error } = await supabase
         .from("categories")
-        .update({ name, slug, image_url: imageUrl || null, description: description || null })
+        .update({ name, slug, image_url: finalImageUrl || null, description: description || null })
         .eq("id", editTarget.id);
       if (error) alert("Error: " + error.message);
     } else {
       const { error } = await supabase.from("categories").insert({
         name,
         slug,
-        image_url: imageUrl || null,
+        image_url: finalImageUrl || null,
         description: description || null,
         sort_order: categories.length,
         is_visible: true,
@@ -76,6 +91,7 @@ export default function AdminCategories() {
     setEditTarget(null);
     setName("");
     setImageUrl("");
+    setImageFile(null);
     setSaving(false);
     fetchCategories();
   }
@@ -142,14 +158,46 @@ export default function AdminCategories() {
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Category Image URL</label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-gold)] text-sm"
-                  placeholder="https://..."
-                />
+                <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Category Image</label>
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0 relative">
+                    {imageFile ? (
+                      <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full h-full object-cover" />
+                    ) : imageUrl ? (
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="text-gray-300" size={24} />
+                    )}
+                    {(imageFile || imageUrl) && (
+                      <button
+                        type="button"
+                        onClick={() => { setImageFile(null); setImageUrl(""); }}
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                      <Upload size={16} />
+                      Choose Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setImageFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Upload a high-quality square image for the category.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
             <div>
